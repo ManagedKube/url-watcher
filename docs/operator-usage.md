@@ -17,7 +17,7 @@ newly created repo.
 ### Create a new CRD
 
 ```
-operator-sdk add api --api-version=url-watcher.managedkube.com/v1alpha1 --kind=Watcher
+operator-sdk add api --api-version=urlwatcher.managedkube.com/v1alpha1 --kind=Watcher
 ```
 
 This will create `./pkg/apis/urlwatcher/v1alpha1/watcher_types.go`
@@ -28,10 +28,16 @@ After modifying the `*_types.go` file always run the following command to update
 $ operator-sdk generate k8s
 ```
 
+### OpenAPI Validation
+
+```
+operator-sdk generate openapi
+```
+
 ### Add a new controller
 
 ```
-operator-sdk add controller --api-version=url-watcher.managedkube.com/v1alpha1 --kind=Watcher
+operator-sdk add controller --api-version=urlwatcher.managedkube.com/v1alpha1 --kind=Watcher
 ```
 
 Create a new controller file `./pkg/controller/watcher/watcher_controller.go`
@@ -47,6 +53,15 @@ kubectl apply -f deploy/crds/urlwatcher_v1alpha1_watcher_crd.yaml
 ### Running the controller
 
 ```
-export OPERATOR_NAME=url-watcher
+export OPERATOR_NAME=urlwatcher
 operator-sdk up local --namespace=default
+```
+
+### Create the CRD for the controller to take action on
+At this point, nothing is happening because the controller don't have anything to act upon.
+
+Create a CRD for the controller to take action on:
+
+```
+kubectl apply -f deploy/crds/urlwatcher_v1alpha1_watcher_cr.yaml
 ```

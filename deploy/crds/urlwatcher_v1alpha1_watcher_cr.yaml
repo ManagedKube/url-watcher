@@ -1,0 +1,8 @@
+apiVersion: urlwatcher.managedkube.com/v1alpha1
+kind: Watcher
+metadata:
+  name: example-watcher
+spec:
+  # Add fields here
+  size: 1
+  foo: 1
