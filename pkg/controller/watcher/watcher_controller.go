@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"k8s.io/api/extensions/v1beta1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -54,6 +55,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner Watcher
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &urlwatcherv1alpha1.Watcher{},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Watch ingress resources
+	err = c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &urlwatcherv1alpha1.Watcher{},
 	})
@@ -123,6 +133,38 @@ func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Resul
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	//////////////////////////////////////////////////////////////////////////////
+	// Listing the ingresses
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	ingressList := &v1beta1.IngressList{}
+	listOps := &client.ListOptions{}
+
+	err = r.client.List(context.TODO(), listOps, ingressList)
+	if err != nil {
+		reqLogger.Error(err, "Failed to list ingress.", "Memcached.Namespace", request.Namespace, "Memcached.Name", request.Name)
+		return reconcile.Result{}, err
+	}
+
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	for _, ingressItem := range ingressList.Items {
+		//reqLogger.WithValues("ingress.name", ingressItem.Name)
+		log.Info("Ingress list", "ingress.Name", ingressItem.Name)
+		log.Info("Ingress list", "ingress.Annotations", ingressItem.Annotations)
+	}
+
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	//////////////////////////////////////////////////////////////////////////////
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	// Watching ingress resources for changes
+	//ingress
+
+
+	//////////////////////////////////////////////////////////////////////////////
+
+
 
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
