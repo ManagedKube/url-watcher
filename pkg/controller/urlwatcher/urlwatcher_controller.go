@@ -298,6 +298,7 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 						Image:   "busybox",
 						Name:    "url-watcher",
 						Command: []string{"sleep", "3600"},
+						// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#envvar-v1-core
 						Env: []corev1.EnvVar{
 							{
 								Name: "foo",
