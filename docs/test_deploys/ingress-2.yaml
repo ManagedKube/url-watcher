@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: test-ingress-2
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: external
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /testpath-2
+            backend:
+              serviceName: test-2
+              servicePort: 80

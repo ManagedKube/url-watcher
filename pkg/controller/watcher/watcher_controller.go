@@ -63,12 +63,30 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch ingress resources
-	err = c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &urlwatcherv1alpha1.Watcher{},
-	})
+	// Setting the handler to EnqueueRequestForObject looks like it will watch objects that
+	// is not owned by this controller
+	// Doc: https://godoc.org/sigs.k8s.io/controller-runtime/pkg/handler
+	//err = c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForObject{})
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//
+	// controller is a controller.controller
+	err = c.Watch(
+		&source.Kind{Type: &v1beta1.Ingress{}},
+		&handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				return []reconcile.Request{
+					{NamespacedName: types.NamespacedName{
+						Name:      "ingress/" + a.Meta.GetName(),
+						Namespace: a.Meta.GetNamespace(),
+					}},
+				}
+			}),
+		})
 	if err != nil {
-		return err
+		// handle it
 	}
 
 	return nil
@@ -93,12 +111,61 @@ type ReconcileWatcher struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name, "other", request.NamespacedName.Name)
 	reqLogger.Info("Reconciling Watcher")
+	reqLogger.Info("doing something....")
+
+	// Get the CRD values
+	urlwatcher := &urlwatcherv1alpha1.Watcher{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, urlwatcher)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			reqLogger.Info("Memcached resource not found. Ignoring since object must be deleted.")
+			return reconcile.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		reqLogger.Error(err, "Failed to get Memcached.")
+		return reconcile.Result{}, err
+	}
+
+	log.Info("urlwatcher", "name", urlwatcher.Name)
+	log.Info("urlwatcher", "namepspace", urlwatcher.Namespace)
+	log.Info("urlwatcher", "size", urlwatcher.Spec.Size)
+	log.Info("urlwatcher", "foo", urlwatcher.Spec.Foo)
+
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	// Listing the ingresses
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	ingressList := &v1beta1.IngressList{}
+	listOps := &client.ListOptions{}
+
+	err = r.client.List(context.TODO(), listOps, ingressList)
+	if err != nil {
+		reqLogger.Error(err, "Failed to list ingress.", "Memcached.Namespace", request.Namespace, "Memcached.Name", request.Name)
+		return reconcile.Result{}, err
+	}
+
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	for _, ingressItem := range ingressList.Items {
+		//reqLogger.WithValues("ingress.name", ingressItem.Name)
+		log.Info("Ingress list", "ingress.Name", ingressItem.Name)
+		log.Info("Ingress list", "ingress.Annotations", ingressItem.Annotations)
+		log.Info("Ingress list", "ingress.Status.String", ingressItem.Status.String())
+		log.Info("Ingress list", "ingress.GetOwnerReferences", ingressItem.GetOwnerReferences())
+	}
+
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	//////////////////////////////////////////////////////////////////////////////
+
 
 	// Fetch the Watcher instance
 	instance := &urlwatcherv1alpha1.Watcher{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -134,35 +201,9 @@ func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	//////////////////////////////////////////////////////////////////////////////
-	// Listing the ingresses
-	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
-	ingressList := &v1beta1.IngressList{}
-	listOps := &client.ListOptions{}
-
-	err = r.client.List(context.TODO(), listOps, ingressList)
-	if err != nil {
-		reqLogger.Error(err, "Failed to list ingress.", "Memcached.Namespace", request.Namespace, "Memcached.Name", request.Name)
-		return reconcile.Result{}, err
-	}
-
-	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
-	for _, ingressItem := range ingressList.Items {
-		//reqLogger.WithValues("ingress.name", ingressItem.Name)
-		log.Info("Ingress list", "ingress.Name", ingressItem.Name)
-		log.Info("Ingress list", "ingress.Annotations", ingressItem.Annotations)
-	}
-
-	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
-	//////////////////////////////////////////////////////////////////////////////
 
 
-	//////////////////////////////////////////////////////////////////////////////
-	// Watching ingress resources for changes
-	//ingress
 
-
-	//////////////////////////////////////////////////////////////////////////////
 
 
 
