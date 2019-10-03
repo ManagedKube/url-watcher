@@ -215,7 +215,7 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: urlwatcher.Name, Namespace: urlwatcher.Namespace}, deployment)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Deployment
-		dep := r.deploymentForMemcached(urlwatcher)
+		dep := r.deploymentForUrlWatcher(urlwatcher)
 		reqLogger.Info("Creating a new Deployment.", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.client.Create(context.TODO(), dep)
 		if err != nil {
@@ -273,10 +273,10 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 //}
 
 
-// deploymentForMemcached returns a memcached Deployment object
+// deploymentForUrlWatcher returns a memcached Deployment object
 // Doc: https://github.com/operator-framework/operator-sdk-samples/blob/master/memcached-operator/pkg/controller/memcached/memcached_controller.go#L191
-func (r *ReconcileUrlWatcher) deploymentForMemcached(m *urlwatcherv1alpha1.UrlWatcher) *appsv1.Deployment {
-	ls := labelsForMemcached(m.Name)
+func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlWatcher) *appsv1.Deployment {
+	ls := labelsForDeployment(m.Name)
 	replicas := m.Spec.Size
 
 	dep := &appsv1.Deployment{
@@ -295,26 +295,32 @@ func (r *ReconcileUrlWatcher) deploymentForMemcached(m *urlwatcherv1alpha1.UrlWa
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
-						Image:   "memcached:1.4.36-alpine",
-						Name:    "memcached",
-						Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
+						Image:   "busybox",
+						Name:    "url-watcher",
+						Command: []string{"sleep", "3600"},
+						Env: []corev1.EnvVar{
+							{
+								Name: "foo",
+								Value: "bar",
+							},
+						},
 						Ports: []corev1.ContainerPort{{
-							ContainerPort: 11211,
-							Name:          "memcached",
+							ContainerPort: 9093,
+							Name:          "prometheus",
 						}},
 					}},
 				},
 			},
 		},
 	}
-	// Set Memcached instance as the owner of the Deployment.
+	// Set UrlWatcher instance as the owner of the Deployment.
 	controllerutil.SetControllerReference(m, dep, r.scheme)
 	return dep
 }
 
-// labelsForMemcached returns the labels for selecting the resources
-// belonging to the given memcached CR name.
-func labelsForMemcached(name string) map[string]string {
+// labelsForDeployment returns the labels for selecting the resources
+// belonging to the given UrlWarcher CR name.
+func labelsForDeployment(name string) map[string]string {
 	return map[string]string{"app": "memcached", "memcached_cr": name}
 }
 
