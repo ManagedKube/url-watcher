@@ -25,7 +25,7 @@ This will create `./pkg/apis/urlwatcher/v1alpha1/watcher_types.go`
 After modifying the `*_types.go` file always run the following command to update the generated code for that resource type:
 
 ```
-$ operator-sdk generate k8s
+operator-sdk generate k8s
 ```
 
 ### OpenAPI Validation
@@ -47,7 +47,7 @@ Create a new controller file `./pkg/controller/watcher/watcher_controller.go`
 The CRD needs to be created first before running the operator or it will fail
 
 ```
-kubectl apply -f deploy/crds/urlwatcher_v1alpha1_watcher_crd.yaml
+kubectl apply -f deploy/crds/urlwatcher_v1alpha1_urlwatcher_crd.yaml
 ```
 
 ### Running the controller
@@ -57,13 +57,19 @@ export OPERATOR_NAME=urlwatcher
 operator-sdk up local --namespace=default
 ```
 
+Watch all namespace:
+
+```
+operator-sdk up local --namespace=""
+```
+
 ### Create the CRD for the controller to take action on
 At this point, nothing is happening because the controller don't have anything to act upon.
 
 Create a CRD for the controller to take action on:
 
 ```
-kubectl apply -f deploy/crds/urlwatcher_v1alpha1_watcher_cr.yaml
+kubectl apply -f deploy/crds/urlwatcher_v1alpha1_urlwatcher_cr.yaml
 ```
 
 # Building Manually
@@ -71,4 +77,8 @@ kubectl apply -f deploy/crds/urlwatcher_v1alpha1_watcher_cr.yaml
 ```
 cd ./cmd/manager
 go build
+```
+
+```
+"go", "build", "-o", "build/_output/bin/url-watcher-local", "managedkube.com/url-watcher/cmd/manager"
 ```
