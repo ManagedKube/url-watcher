@@ -2,6 +2,8 @@ package urlwatcher
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"k8s.io/api/extensions/v1beta1"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -132,6 +134,105 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	log.Info("urlwatcher", "AllIngresses", urlwatcher.Spec.AllIngresses)
 
 
+	// Check if the Deployment already exists, if not create a new one
+	deployment := &appsv1.Deployment{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: urlwatcher.Name, Namespace: urlwatcher.Namespace}, deployment)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new Deployment
+		dep := r.deploymentForUrlWatcher(urlwatcher)
+		reqLogger.Info("Creating a new Deployment.", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		err = r.client.Create(context.TODO(), dep)
+		if err != nil {
+			reqLogger.Error(err, "Failed to create new Deployment.", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			return reconcile.Result{}, err
+		}
+		// Deployment created successfully - return and requeue
+		// NOTE: that the requeue is made with the purpose to provide the deployment object for the next step to ensure the deployment size is the same as the spec.
+		// Also, you could GET the deployment object again instead of requeue if you wish. See more over it here: https://godoc.org/sigs.k8s.io/controller-runtime/pkg/reconcile#Reconciler
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get Deployment.")
+		return reconcile.Result{}, err
+	}
+
+
+	// Ensure the deployment size is the same as the spec
+	size := urlwatcher.Spec.Size
+	if *deployment.Spec.Replicas != size {
+		deployment.Spec.Replicas = &size
+		err = r.client.Update(context.TODO(), deployment)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Deployment.", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
+			return reconcile.Result{}, err
+		}
+	}
+
+	enndpointSpec := []urlWatchEndpointSpec{
+		{},
+	}
+	endpoints := urlWatchEndpoints{
+		Endpoints: enndpointSpec,
+	}
+	urlWatchSpecParsed := urlWatchSpec{
+		Watch: endpoints,
+	}
+
+	// Log out current envars
+	for _, envs := range deployment.Spec.Template.Spec.Containers[0].Env {
+		log.Info("Deployment", "deployment.Spec.Template.Spec.Containers[].Env", envs.Name+" | "+envs.Value)
+
+		if(envs.Name == "ENDPOINT_TEST_JSON"){
+
+
+//			fmt.Println("xxxxx")
+//			var jsonBlob = []byte(`[
+//	{"Name": "Platypus", "Order": "Monotremata"},
+//	{"Name": "Quoll",    "Order": "Dasyuromorphia"}
+//]`)
+//			type Animal struct {
+//				Name  string
+//				Order string
+//			}
+//			var animals []Animal
+//			err := json.Unmarshal(jsonBlob, &animals)
+//			if err != nil {
+//				fmt.Println("error:", err)
+//			}
+//			fmt.Println("%+v", animals)
+
+			fmt.Println("xxxxx")
+			//var jsonBlob = []byte(`{"watch":{"endpoints":[{"interval":60,"host":"www.example.com"}]}}`)
+			////type Animal struct {
+			////	Name  string
+			////	Order string
+			////}
+			////var animals []Animal
+			//err := json.Unmarshal(jsonBlob, &urlWatchSpecParsed)
+			//if err != nil {
+			//	fmt.Println("error:", err)
+			//}
+			//fmt.Println("%+v", urlWatchSpecParsed)
+			fmt.Println("xxxxx")
+
+
+
+
+			//var jsonBlob = []byte(`{"watch":{"endpoints":[]}}`)
+
+			log.Info("Deployment", "deployment.Spec.Template.Spec.Containers[].Env", envs.Name+"|"+string(envs.Value))
+
+
+			err = json.Unmarshal([]byte(envs.Value), &urlWatchSpecParsed)
+			if err != nil {
+				reqLogger.Error(err, "Failed to unmarchall json: ENDPOINT_TEST_JSON", "envs.Name", envs.Name, "envs.Value", envs.Value)
+			}
+		}
+	}
+
+
+
+	updatedEndpointSpecs := false
+
 	//////////////////////////////////////////////////////////////////////////////
 	// Listing the ingresses
 	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
@@ -156,12 +257,51 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 		for _, rules := range ingressItem.Spec.Rules {
 			log.Info("Ingress list.rules", "ingress.rules.hosts", rules.Host)
 
+			if(!isHostInEndpointsList(urlWatchSpecParsed, rules.Host)){
+				// Add to the List and update the deployment
+
+				tempEndpointSpec := urlWatchEndpointSpec{
+					Interval: 60,
+					Protocol: "http",
+					Host: rules.Host,
+					Method: "GET",
+					Path: "/",
+					Payload: "",
+					ScrapeTimeout: 30,
+				}
+
+				urlWatchSpecParsed.Watch.Endpoints = append(urlWatchSpecParsed.Watch.Endpoints, tempEndpointSpec)
+
+				updatedEndpointSpecs = true
+			}
+
 			for _, paths := range rules.IngressRuleValue.HTTP.Paths {
 				log.Info("Ingress list.rules.paths", "ingress.rules.hosts.path", paths.Path)
 			}
 		}
 
 		reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	}
+
+	// Update the deployment endpoint specs
+	if(updatedEndpointSpecs){
+		log.Info("updatedEndpointSpecs", "updatedEndpointSpecs", "true")
+
+		b, err := json.Marshal(urlWatchSpecParsed)
+
+		updatedEnv := []corev1.EnvVar{
+			{
+				Name: "ENDPOINT_TEST_JSON",
+				Value: string(b),
+			},
+		}
+
+		deployment.Spec.Template.Spec.Containers[0].Env = updatedEnv
+		err = r.client.Update(context.TODO(), deployment)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Deployment.", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
+			return reconcile.Result{}, err
+		}
 	}
 
 
@@ -210,38 +350,7 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	//reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 
 
-	// Check if the Deployment already exists, if not create a new one
-	deployment := &appsv1.Deployment{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: urlwatcher.Name, Namespace: urlwatcher.Namespace}, deployment)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new Deployment
-		dep := r.deploymentForUrlWatcher(urlwatcher)
-		reqLogger.Info("Creating a new Deployment.", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-		err = r.client.Create(context.TODO(), dep)
-		if err != nil {
-			reqLogger.Error(err, "Failed to create new Deployment.", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-			return reconcile.Result{}, err
-		}
-		// Deployment created successfully - return and requeue
-		// NOTE: that the requeue is made with the purpose to provide the deployment object for the next step to ensure the deployment size is the same as the spec.
-		// Also, you could GET the deployment object again instead of requeue if you wish. See more over it here: https://godoc.org/sigs.k8s.io/controller-runtime/pkg/reconcile#Reconciler
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get Deployment.")
-		return reconcile.Result{}, err
-	}
 
-
-	// Ensure the deployment size is the same as the spec
-	size := urlwatcher.Spec.Size
-	if *deployment.Spec.Replicas != size {
-		deployment.Spec.Replicas = &size
-		err = r.client.Update(context.TODO(), deployment)
-		if err != nil {
-			reqLogger.Error(err, "Failed to update Deployment.", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
-			return reconcile.Result{}, err
-		}
-	}
 
 
 
@@ -279,6 +388,16 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 	ls := labelsForDeployment(m.Name)
 	replicas := m.Spec.Size
 
+	enndpointSpec := []urlWatchEndpointSpec{{}}
+	endpoints := urlWatchEndpoints{
+		Endpoints: enndpointSpec,
+	}
+	urlWatchSpecParsed := urlWatchSpec{
+		Watch: endpoints,
+	}
+
+	b, _ := json.Marshal(urlWatchSpecParsed)
+
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name,
@@ -301,8 +420,8 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 						// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#envvar-v1-core
 						Env: []corev1.EnvVar{
 							{
-								Name: "foo",
-								Value: "bar",
+								Name: "ENDPOINT_TEST_JSON",
+								Value: string(b),
 							},
 						},
 						Ports: []corev1.ContainerPort{{
@@ -325,3 +444,34 @@ func labelsForDeployment(name string) map[string]string {
 	return map[string]string{"app": "memcached", "memcached_cr": name}
 }
 
+type urlWatchSpec struct{
+	Watch urlWatchEndpoints `json:"watch"`
+}
+
+type urlWatchEndpoints struct{
+	Endpoints []urlWatchEndpointSpec `json:"endpoints"`
+}
+
+type urlWatchEndpointSpec struct{
+	Interval int64 `json:"interval,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+	Host string `json:"host,omitempty"`
+	Method string `json:"method,omitempty"`
+	Path string `json:"path,omitempty"`
+	Payload string `json:"payload,omitempty"`
+	ScrapeTimeout int64 `json:"scrapeTimeout,omitempty"`
+}
+
+// Check if the host is in the urlWatchSpecParsed list
+func isHostInEndpointsList(urlWatchSpecParsed urlWatchSpec, host string) bool{
+
+	inList := false
+
+	for _, endpointSpec := range urlWatchSpecParsed.Watch.Endpoints{
+		if(endpointSpec.Host == host){
+			inList = true
+		}
+	}
+
+	return inList
+}
