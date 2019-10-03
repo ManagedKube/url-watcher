@@ -4,6 +4,6 @@ metadata:
   name: example-urlwatcher
 spec:
   # Add fields here
-  size: 3
+  size: 1
   foo: 1
   allIngresses: true
