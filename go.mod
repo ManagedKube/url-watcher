@@ -3,7 +3,7 @@ module managedkube.com/url-watcher
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/go-openapi/spec v0.19.0
-	github.com/operator-framework/operator-sdk v0.10.1-0.20191001160257-396808faf46d
+	github.com/operator-framework/operator-sdk v0.10.1-0.20191003162215-1801b81d5400
 	github.com/spf13/pflag v1.0.3
 	k8s.io/api v0.0.0-20190612125737-db0771252981
 	k8s.io/apimachinery v0.0.0-20190612125636-6a5db36e93ad

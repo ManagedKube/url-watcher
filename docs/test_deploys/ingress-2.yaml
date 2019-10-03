@@ -1,15 +1,19 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: test-ingress-2
+  name: simple-fanout-example
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    kubernetes.io/ingress.class: external
 spec:
   rules:
-    - http:
+    - host: foo.bar.com
+      http:
         paths:
-          - path: /testpath-2
+          - path: /foo
             backend:
-              serviceName: test-2
-              servicePort: 80
+              serviceName: service1
+              servicePort: 4200
+          - path: /bar
+            backend:
+              serviceName: service2
+              servicePort: 8080

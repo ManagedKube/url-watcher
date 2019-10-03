@@ -7,9 +7,9 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// WatcherSpec defines the desired state of Watcher
+// UrlWatcherSpec defines the desired state of UrlWatcher
 // +k8s:openapi-gen=true
-type WatcherSpec struct {
+type UrlWatcherSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
@@ -18,9 +18,9 @@ type WatcherSpec struct {
 	Foo  int32 `json:"foo"`
 }
 
-// WatcherStatus defines the observed state of Watcher
+// UrlWatcherStatus defines the observed state of UrlWatcher
 // +k8s:openapi-gen=true
-type WatcherStatus struct {
+type UrlWatcherStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
@@ -30,26 +30,26 @@ type WatcherStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Watcher is the Schema for the watchers API
+// UrlWatcher is the Schema for the urlwatchers API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-type Watcher struct {
+type UrlWatcher struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   WatcherSpec   `json:"spec,omitempty"`
-	Status WatcherStatus `json:"status,omitempty"`
+	Spec   UrlWatcherSpec   `json:"spec,omitempty"`
+	Status UrlWatcherStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// WatcherList contains a list of Watcher
-type WatcherList struct {
+// UrlWatcherList contains a list of UrlWatcher
+type UrlWatcherList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Watcher `json:"items"`
+	Items           []UrlWatcher `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
+	SchemeBuilder.Register(&UrlWatcher{}, &UrlWatcherList{})
 }

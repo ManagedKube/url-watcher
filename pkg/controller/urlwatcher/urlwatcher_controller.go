@@ -1,4 +1,4 @@
-package watcher
+package urlwatcher
 
 import (
 	"context"
@@ -20,14 +20,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_watcher")
+var log = logf.Log.WithName("controller_urlwatcher")
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
 * business logic.  Delete these comments after modifying this file.*
  */
 
-// Add creates a new Watcher Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new UrlWatcher Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -35,28 +35,28 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileWatcher{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileUrlWatcher{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("watcher-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("urlwatcher-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource Watcher
-	err = c.Watch(&source.Kind{Type: &urlwatcherv1alpha1.Watcher{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource UrlWatcher
+	err = c.Watch(&source.Kind{Type: &urlwatcherv1alpha1.UrlWatcher{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Watcher
+	// Watch for changes to secondary resource Pods and requeue the owner UrlWatcher
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &urlwatcherv1alpha1.Watcher{},
+		OwnerType:    &urlwatcherv1alpha1.UrlWatcher{},
 	})
 	if err != nil {
 		return err
@@ -65,13 +65,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch ingress resources
 	// Setting the handler to EnqueueRequestForObject looks like it will watch objects that
 	// is not owned by this controller
-	// Doc: https://godoc.org/sigs.k8s.io/controller-runtime/pkg/handler
-	//err = c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForObject{})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//
 	// controller is a controller.controller
 	err = c.Watch(
 		&source.Kind{Type: &v1beta1.Ingress{}},
@@ -92,42 +85,41 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileWatcher implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileWatcher{}
+// blank assignment to verify that ReconcileUrlWatcher implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileUrlWatcher{}
 
-// ReconcileWatcher reconciles a Watcher object
-type ReconcileWatcher struct {
+// ReconcileUrlWatcher reconciles a UrlWatcher object
+type ReconcileUrlWatcher struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a Watcher object and makes changes based on the state read
-// and what is in the Watcher.Spec
+// Reconcile reads that state of the cluster for a UrlWatcher object and makes changes based on the state read
+// and what is in the UrlWatcher.Spec
 // TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
 // a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name, "other", request.NamespacedName.Name)
-	reqLogger.Info("Reconciling Watcher")
-	reqLogger.Info("doing something....")
+func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger.Info("Reconciling UrlWatcher")
 
 	// Get the CRD values
-	urlwatcher := &urlwatcherv1alpha1.Watcher{}
+	urlwatcher := &urlwatcherv1alpha1.UrlWatcher{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, urlwatcher)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			reqLogger.Info("Memcached resource not found. Ignoring since object must be deleted.")
+			reqLogger.Info("urlwatcherv1alpha1.UrlWatcher resource not found. Ignoring.")
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		reqLogger.Error(err, "Failed to get Memcached.")
+		reqLogger.Error(err, "Failed to get urlwatcherv1alpha1.UrlWatcher.")
 		return reconcile.Result{}, err
 	}
 
@@ -135,7 +127,6 @@ func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Resul
 	log.Info("urlwatcher", "namepspace", urlwatcher.Namespace)
 	log.Info("urlwatcher", "size", urlwatcher.Spec.Size)
 	log.Info("urlwatcher", "foo", urlwatcher.Spec.Foo)
-
 
 
 	//////////////////////////////////////////////////////////////////////////////
@@ -150,21 +141,32 @@ func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
 	for _, ingressItem := range ingressList.Items {
+		reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
 		//reqLogger.WithValues("ingress.name", ingressItem.Name)
 		log.Info("Ingress list", "ingress.Name", ingressItem.Name)
 		log.Info("Ingress list", "ingress.Annotations", ingressItem.Annotations)
 		log.Info("Ingress list", "ingress.Status.String", ingressItem.Status.String())
 		log.Info("Ingress list", "ingress.GetOwnerReferences", ingressItem.GetOwnerReferences())
+
+
+		for _, rules := range ingressItem.Spec.Rules {
+			log.Info("Ingress list.rules", "ingress.rules.hosts", rules.Host)
+
+			for _, paths := range rules.IngressRuleValue.HTTP.Paths {
+				log.Info("Ingress list.rules.paths", "ingress.rules.hosts.path", paths.Path)
+			}
+		}
+
+		reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
 	}
 
-	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+
 	//////////////////////////////////////////////////////////////////////////////
 
 
-	// Fetch the Watcher instance
-	instance := &urlwatcherv1alpha1.Watcher{}
+	// Fetch the UrlWatcher instance
+	instance := &urlwatcherv1alpha1.UrlWatcher{}
 	err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -180,7 +182,7 @@ func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Resul
 	// Define a new Pod object
 	pod := newPodForCR(instance)
 
-	// Set Watcher instance as the owner and controller
+	// Set UrlWatcher instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -201,19 +203,13 @@ func (r *ReconcileWatcher) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-
-
-
-
-
-
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *urlwatcherv1alpha1.Watcher) *corev1.Pod {
+func newPodForCR(cr *urlwatcherv1alpha1.UrlWatcher) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}

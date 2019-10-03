@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.Watcher":       schema_pkg_apis_urlwatcher_v1alpha1_Watcher(ref),
-		"managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.WatcherSpec":   schema_pkg_apis_urlwatcher_v1alpha1_WatcherSpec(ref),
-		"managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.WatcherStatus": schema_pkg_apis_urlwatcher_v1alpha1_WatcherStatus(ref),
+		"managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcher":       schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcher(ref),
+		"managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcherSpec":   schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcherSpec(ref),
+		"managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcherStatus": schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcherStatus(ref),
 	}
 }
 
-func schema_pkg_apis_urlwatcher_v1alpha1_Watcher(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcher(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Watcher is the Schema for the watchers API",
+				Description: "UrlWatcher is the Schema for the urlwatchers API",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -44,27 +44,27 @@ func schema_pkg_apis_urlwatcher_v1alpha1_Watcher(ref common.ReferenceCallback) c
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.WatcherSpec"),
+							Ref: ref("managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcherSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.WatcherStatus"),
+							Ref: ref("managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcherStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.WatcherSpec", "managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.WatcherStatus"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcherSpec", "managedkube.com/url-watcher/pkg/apis/urlwatcher/v1alpha1.UrlWatcherStatus"},
 	}
 }
 
-func schema_pkg_apis_urlwatcher_v1alpha1_WatcherSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcherSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WatcherSpec defines the desired state of Watcher",
+				Description: "UrlWatcherSpec defines the desired state of UrlWatcher",
 				Properties: map[string]spec.Schema{
 					"size": {
 						SchemaProps: spec.SchemaProps{
@@ -86,11 +86,11 @@ func schema_pkg_apis_urlwatcher_v1alpha1_WatcherSpec(ref common.ReferenceCallbac
 	}
 }
 
-func schema_pkg_apis_urlwatcher_v1alpha1_WatcherStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcherStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WatcherStatus defines the observed state of Watcher",
+				Description: "UrlWatcherStatus defines the observed state of UrlWatcher",
 				Properties: map[string]spec.Schema{
 					"nodes": {
 						SchemaProps: spec.SchemaProps{

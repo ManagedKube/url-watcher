@@ -17,7 +17,7 @@ newly created repo.
 ### Create a new CRD
 
 ```
-operator-sdk add api --api-version=urlwatcher.managedkube.com/v1alpha1 --kind=Watcher
+operator-sdk add api --api-version=urlwatcher.managedkube.com/v1alpha1 --kind=UrlWatcher
 ```
 
 This will create `./pkg/apis/urlwatcher/v1alpha1/watcher_types.go`
@@ -37,7 +37,7 @@ operator-sdk generate openapi
 ### Add a new controller
 
 ```
-operator-sdk add controller --api-version=urlwatcher.managedkube.com/v1alpha1 --kind=Watcher
+operator-sdk add controller --api-version=urlwatcher.managedkube.com/v1alpha1 --kind=UrlWatcher
 ```
 
 Create a new controller file `./pkg/controller/watcher/watcher_controller.go`
@@ -64,4 +64,11 @@ Create a CRD for the controller to take action on:
 
 ```
 kubectl apply -f deploy/crds/urlwatcher_v1alpha1_watcher_cr.yaml
+```
+
+# Building Manually
+
+```
+cd ./cmd/manager
+go build
 ```
