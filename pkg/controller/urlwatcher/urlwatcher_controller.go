@@ -127,6 +127,7 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	log.Info("urlwatcher", "namepspace", urlwatcher.Namespace)
 	log.Info("urlwatcher", "size", urlwatcher.Spec.Size)
 	log.Info("urlwatcher", "foo", urlwatcher.Spec.Foo)
+	log.Info("urlwatcher", "AllIngresses", urlwatcher.Spec.AllIngresses)
 
 
 	//////////////////////////////////////////////////////////////////////////////

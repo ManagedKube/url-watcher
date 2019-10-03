@@ -16,6 +16,7 @@ type UrlWatcherSpec struct {
 
 	Size int32 `json:"size"`
 	Foo  int32 `json:"foo"`
+	AllIngresses bool `json:"allIngresses"`
 }
 
 // UrlWatcherStatus defines the observed state of UrlWatcher

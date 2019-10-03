@@ -78,8 +78,14 @@ func schema_pkg_apis_urlwatcher_v1alpha1_UrlWatcherSpec(ref common.ReferenceCall
 							Format: "int32",
 						},
 					},
+					"allIngresses": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"size", "foo"},
+				Required: []string{"size", "foo", "allIngresses"},
 			},
 		},
 		Dependencies: []string{},

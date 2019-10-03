@@ -29,6 +29,8 @@ spec:
           type: object
         spec:
           properties:
+            allIngresses:
+              type: boolean
             foo:
               format: int32
               type: integer
@@ -38,6 +40,7 @@ spec:
           required:
           - size
           - foo
+          - allIngresses
           type: object
         status:
           properties:
