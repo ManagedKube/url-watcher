@@ -76,7 +76,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 				return []reconcile.Request{
 					{NamespacedName: types.NamespacedName{
-						Name:      "ingress/" + a.Meta.GetName(),
+						// Hardcoding the name of the CRD watch
+						Name:      "example-urlwatcher", //"ingress/" + a.Meta.GetName(),
 						Namespace: a.Meta.GetNamespace(),
 					}},
 				}
@@ -85,6 +86,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		// handle it
 	}
+
+	// Doc: https://github.com/operator-framework/operator-sdk/issues/1335#issuecomment-485573064
+	// This is able to just watch the resource.
+	// The problem here is that then we don't know the urlwatcher's name or have any info
+	// This would be useful if we just wanted to watch the resource with no link back to the urlwatcher objects
+	//err = c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForObject{})
 
 	return nil
 }
@@ -111,9 +118,20 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling UrlWatcher")
 
-	// Get the CRD values
+	///////////////////////////////////////////////
+	// Ingress
+	///////////////////////////////////////////////
+	ingress := &v1beta1.Ingress{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, ingress)
+
+	reqLogger.Info("Ingress", "ingress.name", ingress.Name, "ingress.namespace", ingress.Namespace, "request.NamespacedName.Name", request.NamespacedName.Name, "request.NamespacedName.Namespace", request.NamespacedName.Namespace)
+
+	///////////////////////////////////////////////
+	// UrlWatcher
+	///////////////////////////////////////////////
+	// Get theUrlWatcher with the CRD values
 	urlwatcher := &urlwatcherv1alpha1.UrlWatcher{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, urlwatcher)
+	err = r.client.Get(context.TODO(), request.NamespacedName, urlwatcher)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -134,6 +152,9 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	log.Info("urlwatcher", "AllIngresses", urlwatcher.Spec.AllIngresses)
 
 
+	///////////////////////////////////////////////
+	// deployment
+	///////////////////////////////////////////////
 	// Check if the Deployment already exists, if not create a new one
 	deployment := &appsv1.Deployment{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: urlwatcher.Name, Namespace: urlwatcher.Namespace}, deployment)
