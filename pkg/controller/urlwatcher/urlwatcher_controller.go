@@ -3,7 +3,6 @@ package urlwatcher
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"k8s.io/api/extensions/v1beta1"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -199,56 +198,20 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// Log out current envars
-	for _, envs := range deployment.Spec.Template.Spec.Containers[0].Env {
-		log.Info("Deployment", "deployment.Spec.Template.Spec.Containers[].Env", envs.Name+" | "+envs.Value)
-
-		if(envs.Name == "ENDPOINT_TEST_JSON"){
-
-
-//			fmt.Println("xxxxx")
-//			var jsonBlob = []byte(`[
-//	{"Name": "Platypus", "Order": "Monotremata"},
-//	{"Name": "Quoll",    "Order": "Dasyuromorphia"}
-//]`)
-//			type Animal struct {
-//				Name  string
-//				Order string
-//			}
-//			var animals []Animal
-//			err := json.Unmarshal(jsonBlob, &animals)
-//			if err != nil {
-//				fmt.Println("error:", err)
-//			}
-//			fmt.Println("%+v", animals)
-
-			fmt.Println("xxxxx")
-			//var jsonBlob = []byte(`{"watch":{"endpoints":[{"interval":60,"host":"www.example.com"}]}}`)
-			////type Animal struct {
-			////	Name  string
-			////	Order string
-			////}
-			////var animals []Animal
-			//err := json.Unmarshal(jsonBlob, &urlWatchSpecParsed)
-			//if err != nil {
-			//	fmt.Println("error:", err)
-			//}
-			//fmt.Println("%+v", urlWatchSpecParsed)
-			fmt.Println("xxxxx")
-
-
-
-
-			//var jsonBlob = []byte(`{"watch":{"endpoints":[]}}`)
-
-			log.Info("Deployment", "deployment.Spec.Template.Spec.Containers[].Env", envs.Name+"|"+string(envs.Value))
-
-
-			err = json.Unmarshal([]byte(envs.Value), &urlWatchSpecParsed)
-			if err != nil {
-				reqLogger.Error(err, "Failed to unmarchall json: ENDPOINT_TEST_JSON", "envs.Name", envs.Name, "envs.Value", envs.Value)
-			}
-		}
-	}
+	//for _, envs := range deployment.Spec.Template.Spec.Containers[0].Env {
+	//	log.Info("Deployment", "deployment.Spec.Template.Spec.Containers[].Env", envs.Name+" | "+envs.Value)
+	//
+	//	if(envs.Name == "ENDPOINT_TEST_JSON"){
+	//
+	//		log.Info("Deployment", "deployment.Spec.Template.Spec.Containers[].Env", envs.Name+"|"+string(envs.Value))
+	//
+	//
+	//		err = json.Unmarshal([]byte(envs.Value), &urlWatchSpecParsed)
+	//		if err != nil {
+	//			reqLogger.Error(err, "Failed to unmarchall json: ENDPOINT_TEST_JSON", "envs.Name", envs.Name, "envs.Value", envs.Value)
+	//		}
+	//	}
+	//}
 
 
 
@@ -265,6 +228,8 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 		reqLogger.Error(err, "Failed to list ingress.", "Memcached.Namespace", request.Namespace, "Memcached.Name", request.Name)
 		return reconcile.Result{}, err
 	}
+
+	reqLogger.Info("Looping through all ingresses...")
 
 	for _, ingressItem := range ingressList.Items {
 		reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
@@ -296,8 +261,9 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 
 				urlWatchSpecParsed.Watch.Endpoints = append(urlWatchSpecParsed.Watch.Endpoints, tempEndpointSpec)
 
-				updatedEndpointSpecs = true
 			}
+
+			updatedEndpointSpecs = true
 
 		}
 
@@ -320,6 +286,8 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 				Value: string(b),
 			},
 		}
+
+		log.Info("updatedEndpointSpecs", "ENDPOINT_TEST_JSON", string(b))
 
 		deployment.Spec.Template.Spec.Containers[0].Env = updatedEnv
 		err = r.client.Update(context.TODO(), deployment)
