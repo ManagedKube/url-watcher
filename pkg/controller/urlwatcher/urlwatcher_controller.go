@@ -256,7 +256,7 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 
 	//////////////////////////////////////////////////////////////////////////////
 	// Listing the ingresses
-	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	//reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
 	ingressList := &v1beta1.IngressList{}
 	listOps := &client.ListOptions{}
 
@@ -277,6 +277,9 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 
 		for _, rules := range ingressItem.Spec.Rules {
 			log.Info("Ingress list.rules", "ingress.rules.hosts", rules.Host)
+			for _, paths := range rules.IngressRuleValue.HTTP.Paths {
+				log.Info("Ingress list.rules.paths", "ingress.rules.hosts.path", paths.Path)
+			}
 
 			if(!isHostInEndpointsList(urlWatchSpecParsed, rules.Host)){
 				// Add to the List and update the deployment
@@ -296,13 +299,14 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 				updatedEndpointSpecs = true
 			}
 
-			for _, paths := range rules.IngressRuleValue.HTTP.Paths {
-				log.Info("Ingress list.rules.paths", "ingress.rules.hosts.path", paths.Path)
-			}
 		}
 
 		reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
 	}
+
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
+	reqLogger.Info("XXXXXXXXXXXXXXXXXXXXXX")
 
 	// Update the deployment endpoint specs
 	if(updatedEndpointSpecs){
