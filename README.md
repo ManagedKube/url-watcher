@@ -52,3 +52,7 @@ Run:
 ```
 operator-sdk up local --namespace=default
 ```
+
+# Using the debugger
+
+https://github.com/operator-framework/operator-sdk/issues/1315
