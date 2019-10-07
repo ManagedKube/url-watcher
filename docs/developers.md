@@ -7,7 +7,7 @@ There are two parts to this project:
 * The endpoint-runner
 
 # The respository structure
-At your $GOPATh you should create a directory named `managedkube.com`
+At your `$GOPATH` you should create a directory named `managedkube.com`
 
 In the `managedkube.com` directory, checkout this repository into there.
 
