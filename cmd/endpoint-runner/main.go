@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	httpstat "github.com/tcnksm/go-httpstat"
 )
 
 var (
@@ -162,11 +165,30 @@ func runnerGet(endpoint urlWatchEndpointSpec){
 	// TODO: make this dynamic and take this config in from the ENDPOINT_TEST_JSON input
 	req.Header.Add("If-None-Match", `W/"wyzzy"`)
 
+	// Create a httpstat powered context
+	// Doc: https://medium.com/@deeeet/trancing-http-request-latency-in-golang-65b2463f548c
+	var result httpstat.Result
+	ctx := httpstat.WithHTTPStat(req.Context(), &result)
+	req = req.WithContext(ctx)
+
 	// Run request
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println("[INFO] Test failed: ", err)
 	}else {
+
+		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+			log.Fatal(err)
+		}
+		resp.Body.Close()
+		//end := time.Now()
+
+		// Show the httpstat results
+		log.Printf("DNS lookup: %d ms", int(result.DNSLookup/time.Millisecond))
+		log.Printf("TCP connection: %d ms", int(result.TCPConnection/time.Millisecond))
+		log.Printf("TLS handshake: %d ms", int(result.TLSHandshake/time.Millisecond))
+		log.Printf("Server processing: %d ms", int(result.ServerProcessing/time.Millisecond))
+		log.Printf("Content transfer: %d ms", int(result.ContentTransfer(time.Now())/time.Millisecond))
 
 		//Print the HTTP Status Code and Status Name
 		log.Println("HTTP Response Status:", endpoint.Host, resp.StatusCode, http.StatusText(resp.StatusCode))
@@ -178,5 +200,5 @@ func runnerGet(endpoint urlWatchEndpointSpec){
 		}
 	}
 
-	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Host, "ingress_name": "bar", "namespace": "default"}).Set(500)
+	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Host, "ingress_name": "bar", "namespace": "default"}).Set(float64(result.ServerProcessing/time.Millisecond))
 }
