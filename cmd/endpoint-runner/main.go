@@ -7,7 +7,46 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	cpuTemp = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "cpu_temperature_celsius",
+		Help: "Current temperature of the CPU.",
+	})
+	hdFailures = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "hd_errors_total",
+			Help: "Number of hard-disk errors.",
+		},
+		[]string{"device"},
+	)
+
+	// Doc: https://godoc.org/github.com/prometheus/client_golang/prometheus
+	// Doc: https://godoc.org/github.com/prometheus/client_golang/prometheus#GaugeVec
+	promEndpointStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_status",
+			Help:      "The status of an endpoint. alive=1, not reachable=2",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+		},
+	)
+
+
+)
+
+func init() {
+	// Metrics have to be registered to be exposed:
+	prometheus.MustRegister(promEndpointStatus)
+}
+
 
 func main() {
 
@@ -55,8 +94,13 @@ func main() {
 	/////////////////////////////
 	// http server listen
 	/////////////////////////////
-	log.Println("[INFO] Server listening")
-	http.ListenAndServe(":3000", nil)
+	//log.Println("[INFO] Server listening")
+	//http.ListenAndServe(":3000", nil)
+
+	// The Handler function provides a default handler to expose metrics
+	// via an HTTP server. "/metrics" is the usual endpoint for that.
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(":9093", nil))
 }
 
 type urlWatchSpec struct{
@@ -133,4 +177,6 @@ func runnerGet(endpoint urlWatchEndpointSpec){
 			log.Println("Argh! Broken", endpoint.Host)
 		}
 	}
+
+	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Host, "ingress_name": "bar", "namespace": "default"}).Set(500)
 }
