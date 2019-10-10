@@ -187,11 +187,10 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 		}
 	}
 
-	enndpointSpec := []urlWatchEndpointSpec{
-		{},
-	}
+	// init the data structure for the JSON being passed to the url-watcher
+	endpoint := []urlWatchEndpoint{}
 	endpoints := urlWatchEndpoints{
-		Endpoints: enndpointSpec,
+		Endpoints: endpoint,
 	}
 	urlWatchSpecParsed := urlWatchSpec{
 		Watch: endpoints,
@@ -225,7 +224,7 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 
 	err = r.client.List(context.TODO(), listOps, ingressList)
 	if err != nil {
-		reqLogger.Error(err, "Failed to list ingress.", "Memcached.Namespace", request.Namespace, "Memcached.Name", request.Name)
+		reqLogger.Error(err, "Failed to list ingress.", "request.Namespace", request.Namespace, "request.Name", request.Name)
 		return reconcile.Result{}, err
 	}
 
@@ -246,10 +245,15 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 				log.Info("Ingress list.rules.paths", "ingress.rules.hosts.path", paths.Path)
 			}
 
-			if(!isHostInEndpointsList(urlWatchSpecParsed, rules.Host)){
-				// Add to the List and update the deployment
+			// Add to the List and update the deployment
 
-				tempEndpointSpec := urlWatchEndpointSpec{
+			tempUrlWatchEndpoint := urlWatchEndpoint{
+				urlWatchEndpointMetaData{
+					Name: ingressItem.Name,
+					Namespace: ingressItem.Namespace,
+					IngressName: ingressItem.Name,
+				},
+				urlWatchEndpointSpec{
 					Interval: 60,
 					Protocol: "http",
 					Host: rules.Host,
@@ -257,11 +261,10 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 					Path: "/",
 					Payload: "",
 					ScrapeTimeout: 30,
-				}
-
-				urlWatchSpecParsed.Watch.Endpoints = append(urlWatchSpecParsed.Watch.Endpoints, tempEndpointSpec)
-
+				},
 			}
+
+			urlWatchSpecParsed.Watch.Endpoints = append(urlWatchSpecParsed.Watch.Endpoints, tempUrlWatchEndpoint)
 
 			updatedEndpointSpecs = true
 
@@ -381,9 +384,9 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 	ls := labelsForDeployment(m.Name)
 	replicas := m.Spec.Size
 
-	enndpointSpec := []urlWatchEndpointSpec{{}}
+	endpoint := []urlWatchEndpoint{}
 	endpoints := urlWatchEndpoints{
-		Endpoints: enndpointSpec,
+		Endpoints: endpoint,
 	}
 	urlWatchSpecParsed := urlWatchSpec{
 		Watch: endpoints,
@@ -442,7 +445,18 @@ type urlWatchSpec struct{
 }
 
 type urlWatchEndpoints struct{
-	Endpoints []urlWatchEndpointSpec `json:"endpoints"`
+	Endpoints []urlWatchEndpoint `json:"endpoints"`
+}
+
+type urlWatchEndpoint struct{
+	MetaData  urlWatchEndpointMetaData `json:"metadata"`
+	Endpoints urlWatchEndpointSpec `json:"endpoint"`
+}
+
+type urlWatchEndpointMetaData struct{
+	Name string `json:"name"`
+	Namespace string `json:"namespace"`
+	IngressName string `json:"ingressName"`
 }
 
 type urlWatchEndpointSpec struct{
@@ -456,15 +470,15 @@ type urlWatchEndpointSpec struct{
 }
 
 // Check if the host is in the urlWatchSpecParsed list
-func isHostInEndpointsList(urlWatchSpecParsed urlWatchSpec, host string) bool{
-
-	inList := false
-
-	for _, endpointSpec := range urlWatchSpecParsed.Watch.Endpoints{
-		if(endpointSpec.Host == host){
-			inList = true
-		}
-	}
-
-	return inList
-}
+//func isHostInEndpointsList(urlWatchSpecParsed urlWatchSpec, host string) bool{
+//
+//	inList := false
+//
+//	for _, endpointSpec := range urlWatchSpecParsed.Watch.Endpoints{
+//		if(endpointSpec.Host == host){
+//			inList = true
+//		}
+//	}
+//
+//	return inList
+//}
