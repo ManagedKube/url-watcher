@@ -39,6 +39,7 @@ var (
 			"endpoint",
 			"ingress_name",
 			"namespace",
+			"path",
 		},
 	)
 
@@ -211,5 +212,5 @@ func actionGet(endpoint urlWatchEndpointData){
 		}
 	}
 
-	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Endpoint.Host, "ingress_name": "bar", "namespace": "default"}).Set(float64(result.ServerProcessing/time.Millisecond))
+	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Endpoint.Host, "ingress_name": endpoint.MetaData.IngressName, "namespace": endpoint.MetaData.Namespace, "path": endpoint.Endpoint.Path}).Set(float64(result.ServerProcessing/time.Millisecond))
 }

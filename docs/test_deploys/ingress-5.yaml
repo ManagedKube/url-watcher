@@ -1,15 +1,15 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: ingress-4
+  name: ingress-5
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - host:  pastebin.com
+    - host:  postman-echo.com
       http:
         paths:
-          - path: /get
+          - path: /get?foo1=bar1&foo2=bar2
             backend:
               serviceName: service1
               servicePort: 8888
