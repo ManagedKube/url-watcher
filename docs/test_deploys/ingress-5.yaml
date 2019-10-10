@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-4
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host:  pastebin.com
+      http:
+        paths:
+          - path: /get
+            backend:
+              serviceName: service1
+              servicePort: 8888
