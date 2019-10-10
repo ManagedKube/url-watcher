@@ -188,12 +188,14 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// init the data structure for the JSON being passed to the url-watcher
-	endpoint := []urlWatchEndpoint{}
-	endpoints := urlWatchEndpoints{
-		Endpoints: endpoint,
+	endpoints := []urlWatchEndpointData{}
+
+	endpointList := urlWatchEndpoints{
+		Endpoints: endpoints,
 	}
+
 	urlWatchSpecParsed := urlWatchSpec{
-		Watch: endpoints,
+		Watch: endpointList,
 	}
 
 	// Log out current envars
@@ -247,7 +249,7 @@ func (r *ReconcileUrlWatcher) Reconcile(request reconcile.Request) (reconcile.Re
 
 			// Add to the List and update the deployment
 
-			tempUrlWatchEndpoint := urlWatchEndpoint{
+			tempUrlWatchEndpoint := urlWatchEndpointData{
 				urlWatchEndpointMetaData{
 					Name: ingressItem.Name,
 					Namespace: ingressItem.Namespace,
@@ -384,12 +386,14 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 	ls := labelsForDeployment(m.Name)
 	replicas := m.Spec.Size
 
-	endpoint := []urlWatchEndpoint{}
-	endpoints := urlWatchEndpoints{
-		Endpoints: endpoint,
+	endpoints := []urlWatchEndpointData{}
+
+	endpointList := urlWatchEndpoints{
+		Endpoints: endpoints,
 	}
+
 	urlWatchSpecParsed := urlWatchSpec{
-		Watch: endpoints,
+		Watch: endpointList,
 	}
 
 	b, _ := json.Marshal(urlWatchSpecParsed)
@@ -445,12 +449,12 @@ type urlWatchSpec struct{
 }
 
 type urlWatchEndpoints struct{
-	Endpoints []urlWatchEndpoint `json:"endpoints"`
+	Endpoints []urlWatchEndpointData `json:"endpoints"`
 }
 
-type urlWatchEndpoint struct{
+type urlWatchEndpointData struct{
 	MetaData  urlWatchEndpointMetaData `json:"metadata"`
-	Endpoints urlWatchEndpointSpec `json:"endpoint"`
+	Endpoint urlWatchEndpointSpec `json:"endpoint"`
 }
 
 type urlWatchEndpointMetaData struct{
