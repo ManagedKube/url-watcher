@@ -70,14 +70,14 @@ func main() {
 	log.Println("[INFO] ENDPOINT_TEST_JSON: ", endpointTestJson)
 
 
-	enndpointSpec := []urlWatchEndpointSpec{
-		{},
+	endpoints := []urlWatchEndpointData{}
+
+	endpointList := urlWatchEndpoints{
+		Endpoints: endpoints,
 	}
-	endpoints := urlWatchEndpoints{
-		Endpoints: enndpointSpec,
-	}
+
 	urlWatchSpecParsed := urlWatchSpec{
-		Watch: endpoints,
+		Watch: endpointList,
 	}
 
 	err := json.Unmarshal([]byte(endpointTestJson), &urlWatchSpecParsed)
@@ -87,11 +87,11 @@ func main() {
 
 	log.Println("[INFO] Endpoints to watch:", len(urlWatchSpecParsed.Watch.Endpoints))
 
-	for _, endpoint := range urlWatchSpecParsed.Watch.Endpoints{
-		log.Println("[INFO] Endpoint:", endpoint.Host, "| Path:", endpoint.Path, "| Protocol:", endpoint.Protocol)
+	for _, endpointData := range urlWatchSpecParsed.Watch.Endpoints{
+		log.Println("[INFO] Endpoint:", endpointData.Endpoint.Host, "| Path:", endpointData.Endpoint.Path, "| Protocol:", endpointData.Endpoint.Protocol)
 
 		// Start a test runner and start testing this endpoint
-		go runner(endpoint)
+		go runner(endpointData)
 	}
 
 	/////////////////////////////
@@ -111,7 +111,18 @@ type urlWatchSpec struct{
 }
 
 type urlWatchEndpoints struct{
-	Endpoints []urlWatchEndpointSpec `json:"endpoints"`
+	Endpoints []urlWatchEndpointData `json:"endpoints"`
+}
+
+type urlWatchEndpointData struct{
+	MetaData  urlWatchEndpointMetaData `json:"metadata"`
+	Endpoint urlWatchEndpointSpec `json:"endpoint"`
+}
+
+type urlWatchEndpointMetaData struct{
+	Name string `json:"name"`
+	Namespace string `json:"namespace"`
+	IngressName string `json:"ingressName"`
 }
 
 type urlWatchEndpointSpec struct{
@@ -124,23 +135,23 @@ type urlWatchEndpointSpec struct{
 	ScrapeTimeout int64 `json:"scrapeTimeout,omitempty"`
 }
 
-func runner(endpoint urlWatchEndpointSpec){
-	log.Println("[INFO] Starting test runner for:", endpoint.Host)
+func runner(endpoint urlWatchEndpointData){
+	log.Println("[INFO] Starting test runner for:", endpoint.Endpoint.Host)
 
 	for true{
 		// Sleep
-		time.Sleep(time.Duration(endpoint.Interval) * time.Second)
+		time.Sleep(time.Duration(endpoint.Endpoint.Interval) * time.Second)
 
-		log.Println("[INFO] running", endpoint.Host)
+		log.Println("[INFO] running", endpoint.Endpoint.Host)
 
 		runEndpoint(endpoint)
 	}
 
 }
 
-func runEndpoint(endpoint urlWatchEndpointSpec){
+func runEndpoint(endpoint urlWatchEndpointData){
 
-	switch(endpoint.Method) {
+	switch(endpoint.Endpoint.Method) {
 	case "GET":
 		log.Println("[INFO] GET")
 		actionGet(endpoint)
@@ -151,12 +162,12 @@ func runEndpoint(endpoint urlWatchEndpointSpec){
 	}
 }
 
-func actionGet(endpoint urlWatchEndpointSpec){
+func actionGet(endpoint urlWatchEndpointData){
 
 	// Doc: https://golang.org/pkg/net/http/
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", endpoint.Protocol+"://"+endpoint.Host+endpoint.Path, nil)
+	req, err := http.NewRequest("GET", endpoint.Endpoint.Protocol+"://"+endpoint.Endpoint.Host+endpoint.Endpoint.Path, nil)
 	if err != nil {
 		log.Println("[INFO] Test failed: ", err)
 	}
@@ -191,14 +202,14 @@ func actionGet(endpoint urlWatchEndpointSpec){
 		log.Printf("Content transfer: %d ms", int(result.ContentTransfer(time.Now())/time.Millisecond))
 
 		//Print the HTTP Status Code and Status Name
-		log.Println("HTTP Response Status:", endpoint.Host, resp.StatusCode, http.StatusText(resp.StatusCode))
+		log.Println("HTTP Response Status:", endpoint.Endpoint.Host, resp.StatusCode, http.StatusText(resp.StatusCode))
 
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-			log.Println("HTTP Status is in the 2xx range", endpoint.Host)
+			log.Println("HTTP Status is in the 2xx range", endpoint.Endpoint.Host)
 		} else {
-			log.Println("Argh! Broken", endpoint.Host)
+			log.Println("Argh! Broken", endpoint.Endpoint.Host)
 		}
 	}
 
-	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Host, "ingress_name": "bar", "namespace": "default"}).Set(float64(result.ServerProcessing/time.Millisecond))
+	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Endpoint.Host, "ingress_name": "bar", "namespace": "default"}).Set(float64(result.ServerProcessing/time.Millisecond))
 }
