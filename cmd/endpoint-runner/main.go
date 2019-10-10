@@ -91,7 +91,7 @@ func main() {
 		log.Println("[INFO] Endpoint:", endpoint.Host, "| Path:", endpoint.Path, "| Protocol:", endpoint.Protocol)
 
 		// Start a test runner and start testing this endpoint
-		go testRunner(endpoint)
+		go runner(endpoint)
 	}
 
 	/////////////////////////////
@@ -124,7 +124,7 @@ type urlWatchEndpointSpec struct{
 	ScrapeTimeout int64 `json:"scrapeTimeout,omitempty"`
 }
 
-func testRunner(endpoint urlWatchEndpointSpec){
+func runner(endpoint urlWatchEndpointSpec){
 	log.Println("[INFO] Starting test runner for:", endpoint.Host)
 
 	for true{
@@ -133,17 +133,17 @@ func testRunner(endpoint urlWatchEndpointSpec){
 
 		log.Println("[INFO] running", endpoint.Host)
 
-		testEndpoint(endpoint)
+		runEndpoint(endpoint)
 	}
 
 }
 
-func testEndpoint(endpoint urlWatchEndpointSpec){
+func runEndpoint(endpoint urlWatchEndpointSpec){
 
 	switch(endpoint.Method) {
 	case "GET":
 		log.Println("[INFO] GET")
-		runnerGet(endpoint)
+		actionGet(endpoint)
 	case "POST":
 		log.Println("[INFO] POST")
 	default:
@@ -151,7 +151,7 @@ func testEndpoint(endpoint urlWatchEndpointSpec){
 	}
 }
 
-func runnerGet(endpoint urlWatchEndpointSpec){
+func actionGet(endpoint urlWatchEndpointSpec){
 
 	// Doc: https://golang.org/pkg/net/http/
 	client := &http.Client{}
