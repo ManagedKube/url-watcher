@@ -68,6 +68,66 @@ var (
 			"proto",
 		},
 	)
+	promEndpointHttpStatsDnsLookupTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_http_stats_dns_lookup_time_ms",
+			Help:      "The time taken to look up the DNS",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+		},
+	)
+	promEndpointHttpStatsTcpConnectionTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_http_stats_tcp_connection_time_ms",
+			Help:      "The time taken for the TCP connection",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+		},
+	)
+	promEndpointHttpStatsTlsHandshakeTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_http_stats_tls_handshake_time_ms",
+			Help:      "The time taken for the TLS handshake",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+		},
+	)
+	promEndpointHttpStatsServerProcessingTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_http_stats_server_processing_time_ms",
+			Help:      "The time taken for the server to process the request",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+		},
+	)
+	promEndpointHttpStatsContentTransferTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_http_stats_content_transfer_time_ms",
+			Help:      "The time taken for to transfer the content",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+		},
+	)
 
 )
 
@@ -76,6 +136,11 @@ func init() {
 	prometheus.MustRegister(promEndpointStatusCode)
 	prometheus.MustRegister(promEndpointStatus)
 	prometheus.MustRegister(promEndpointProto)
+	prometheus.MustRegister(promEndpointHttpStatsDnsLookupTime)
+	prometheus.MustRegister(promEndpointHttpStatsTcpConnectionTime)
+	prometheus.MustRegister(promEndpointHttpStatsTlsHandshakeTime)
+	prometheus.MustRegister(promEndpointHttpStatsServerProcessingTime)
+	prometheus.MustRegister(promEndpointHttpStatsContentTransferTime)
 }
 
 
@@ -361,5 +426,11 @@ func updatePrometheusMetrics(results endpointResults){
 	promEndpointStatusCode.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.Http.StatusCode))
 	promEndpointStatus.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path, "status": results.Http.Status}).Set(float64(1))
 	promEndpointProto.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path, "proto": results.Http.Proto}).Set(float64(1))
+
+	promEndpointHttpStatsDnsLookupTime.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.HttpStats.DnsLookupTime))
+	promEndpointHttpStatsTcpConnectionTime.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.HttpStats.TcpConnectionTime))
+	promEndpointHttpStatsTlsHandshakeTime.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.HttpStats.TlsHandshakeTime))
+	promEndpointHttpStatsServerProcessingTime.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.HttpStats.ServerProcessingTime))
+	promEndpointHttpStatsContentTransferTime.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.HttpStats.ContentTransferTime))
 }
 
