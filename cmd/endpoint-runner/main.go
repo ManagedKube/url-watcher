@@ -30,10 +30,10 @@ var (
 
 	// Doc: https://godoc.org/github.com/prometheus/client_golang/prometheus
 	// Doc: https://godoc.org/github.com/prometheus/client_golang/prometheus#GaugeVec
-	promEndpointStatus = prometheus.NewGaugeVec(
+	promEndpointStatusCode = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name:      "managedkube_url_watcher_endpoint_status",
-			Help:      "The status of an endpoint. alive=1, not reachable=2",
+			Name:      "managedkube_url_watcher_endpoint_status_code",
+			Help:      "The status code of the returned HTTP call",
 		},
 		[]string{
 			"endpoint",
@@ -42,13 +42,40 @@ var (
 			"path",
 		},
 	)
-
+	promEndpointStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_status",
+			Help:      "The status code string of the returned HTTP call",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+			"status",
+		},
+	)
+	promEndpointProto = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "managedkube_url_watcher_endpoint_proto",
+			Help:      "The protocol used",
+		},
+		[]string{
+			"endpoint",
+			"ingress_name",
+			"namespace",
+			"path",
+			"proto",
+		},
+	)
 
 )
 
 func init() {
 	// Metrics have to be registered to be exposed:
+	prometheus.MustRegister(promEndpointStatusCode)
 	prometheus.MustRegister(promEndpointStatus)
+	prometheus.MustRegister(promEndpointProto)
 }
 
 
@@ -89,10 +116,18 @@ func main() {
 	log.Println("[INFO] Endpoints to watch:", len(urlWatchSpecParsed.Watch.Endpoints))
 
 	for _, endpointData := range urlWatchSpecParsed.Watch.Endpoints{
-		log.Println("[INFO] Endpoint:", endpointData.Endpoint.Host, "| Path:", endpointData.Endpoint.Path, "| Protocol:", endpointData.Endpoint.Protocol)
+		if(areParametersOk(endpointData)){
+			log.Println("[INFO] Endpoint:", endpointData.Endpoint.Host, "| Path:", endpointData.Endpoint.Path, "| Protocol:", endpointData.Endpoint.Protocol)
 
-		// Start a test runner and start testing this endpoint
-		go runner(endpointData)
+			// Start a test runner and start testing this endpoint
+			go runner(endpointData)
+		}else{
+			log.Println("[WARNING] areParametersOk: false, Endpoint:", endpointData.Endpoint.Host, "| Path:", endpointData.Endpoint.Path, "| Protocol:", endpointData.Endpoint.Protocol)
+
+			// Output this endpoint info to prometheus metrics?
+			// Probably a good idea so people would know what this was not able to test
+		}
+
 	}
 
 	/////////////////////////////
@@ -145,25 +180,35 @@ func runner(endpoint urlWatchEndpointData){
 
 		log.Println("[INFO] running", endpoint.Endpoint.Host)
 
-		runEndpoint(endpoint)
+		// Run the endpoint watch action
+		results := runEndpoint(endpoint)
+
+		// Post prometheus with the results
+		updatePrometheusMetrics(results)
 	}
 
 }
 
-func runEndpoint(endpoint urlWatchEndpointData){
+func runEndpoint(endpoint urlWatchEndpointData) endpointResults{
+
+	var results endpointResults
 
 	switch(endpoint.Endpoint.Method) {
 	case "GET":
 		log.Println("[INFO] GET")
-		actionGet(endpoint)
+		results = actionGet(endpoint)
 	case "POST":
 		log.Println("[INFO] POST")
 	default:
 		log.Println("[ERROR] Didn't find test Method")
 	}
+
+	return results
 }
 
-func actionGet(endpoint urlWatchEndpointData){
+func actionGet(endpoint urlWatchEndpointData) endpointResults{
+
+	var results endpointResults
 
 	// Doc: https://golang.org/pkg/net/http/
 	client := &http.Client{}
@@ -187,12 +232,46 @@ func actionGet(endpoint urlWatchEndpointData){
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println("[INFO] Test failed: ", err)
+
+		results = endpointResults{
+			httpResults{
+				StatusCode: -1,
+				Status: "Failed",
+				Proto: "",
+			},
+			httpStats{
+				DnsLookupTime: 0,
+				TcpConnectionTime: 0,
+				TlsHandshakeTime: 0,
+				ServerProcessingTime: 0,
+				ContentTransferTime: 0,
+			},
+			endpoint,
+		}
 	}else {
 
 		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
-			log.Fatal(err)
+			//log.Fatal(err)
+			log.Println("[INFO] Test failed: ", err)
+
+			results = endpointResults{
+				httpResults{
+					StatusCode: -1,
+					Status: "Failed",
+					Proto: "",
+				},
+				httpStats{
+					DnsLookupTime: 0,
+					TcpConnectionTime: 0,
+					TlsHandshakeTime: 0,
+					ServerProcessingTime: 0,
+					ContentTransferTime: 0,
+				},
+				endpoint,
+			}
+
 		}
-		resp.Body.Close()
+
 		//end := time.Now()
 
 		// Show the httpstat results
@@ -210,7 +289,77 @@ func actionGet(endpoint urlWatchEndpointData){
 		} else {
 			log.Println("Argh! Broken", endpoint.Endpoint.Host)
 		}
+
+		//promEndpointStatusCode.With(prometheus.Labels{"endpoint": endpoint.Endpoint.Host, "ingress_name": endpoint.MetaData.IngressName, "namespace": endpoint.MetaData.Namespace, "path": endpoint.Endpoint.Path}).Set(float64(resp.StatusCode))
+		//promEndpointStatusCode.With(prometheus.Labels{"endpoint": endpoint.Endpoint.Host, "ingress_name": endpoint.MetaData.IngressName, "namespace": endpoint.MetaData.Namespace, "path": endpoint.Endpoint.Path}).Set(float64(result.ServerProcessing/time.Millisecond))
+
+		results = endpointResults{
+			httpResults{
+				StatusCode: resp.StatusCode,
+				Status: resp.Status,
+				Proto: resp.Proto,
+			},
+			httpStats{
+				DnsLookupTime: int(result.DNSLookup/time.Millisecond),
+				TcpConnectionTime: int(result.TCPConnection/time.Millisecond),
+				TlsHandshakeTime: int(result.TLSHandshake/time.Millisecond),
+				ServerProcessingTime: int(result.ServerProcessing/time.Millisecond),
+				ContentTransferTime: int(result.ContentTransfer(time.Now())/time.Millisecond),
+			},
+			endpoint,
+		}
+
+		resp.Body.Close()
 	}
 
-	promEndpointStatus.With(prometheus.Labels{"endpoint": endpoint.Endpoint.Host, "ingress_name": endpoint.MetaData.IngressName, "namespace": endpoint.MetaData.Namespace, "path": endpoint.Endpoint.Path}).Set(float64(result.ServerProcessing/time.Millisecond))
+	return results
 }
+
+type endpointResults struct{
+	Http httpResults `json:"http"`
+	HttpStats httpStats `json:"httpStats"`
+	EndpointData urlWatchEndpointData `json:"endpointData"`
+}
+
+type httpResults struct {
+	StatusCode int    `json:"statusCode"`
+	Status     string `json:"status"`
+	Proto      string `json:"proto"`
+}
+
+type httpStats struct {
+	DnsLookupTime int `json:"dnsLookupTime"`
+	TcpConnectionTime int `json:"tcpConnectionTime"`
+	TlsHandshakeTime int `json:"tlsHandshakeTime"`
+	ServerProcessingTime int `json:"serverProcessingTime"`
+	ContentTransferTime int `json:"contentTransferTime"`
+}
+
+func areParametersOk(endpoint urlWatchEndpointData) bool{
+	isOk := true
+
+	if(!isValidHostname(endpoint.Endpoint.Host)){
+		isOk = false
+	}
+
+	return isOk
+}
+
+func isValidHostname(hostname string) bool{
+	isValid := true
+
+	if (hostname == "") {
+		isValid = false
+	}
+
+	return isValid
+}
+
+func updatePrometheusMetrics(results endpointResults){
+	log.Println("[INFO] Updating Prometheus metrics")
+
+	promEndpointStatusCode.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path}).Set(float64(results.Http.StatusCode))
+	promEndpointStatus.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path, "status": results.Http.Status}).Set(float64(1))
+	promEndpointProto.With(prometheus.Labels{"endpoint": results.EndpointData.Endpoint.Host, "ingress_name": results.EndpointData.MetaData.IngressName, "namespace": results.EndpointData.MetaData.Namespace, "path": results.EndpointData.Endpoint.Path, "proto": results.Http.Proto}).Set(float64(1))
+}
+
