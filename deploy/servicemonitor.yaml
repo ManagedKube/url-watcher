@@ -1,0 +1,20 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: url-watcher
+    release: monitoring-prometheus-operator
+  name: url-watcher
+spec:
+  endpoints:
+    - interval: 10s
+      path: /metrics
+      port: prometheus
+      scheme: http
+      scrapeTimeout: "10s"
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: url-watcher

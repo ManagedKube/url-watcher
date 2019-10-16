@@ -441,7 +441,7 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 // labelsForDeployment returns the labels for selecting the resources
 // belonging to the given UrlWarcher CR name.
 func labelsForDeployment(name string) map[string]string {
-	return map[string]string{"app": "memcached", "memcached_cr": name}
+	return map[string]string{"app": "url-watcher", "url-watcher-cr": name}
 }
 
 type urlWatchSpec struct{

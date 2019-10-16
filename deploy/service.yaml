@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: url-watcher
+  labels:
+    app: url-watcher
+spec:
+  selector:
+    app: url-watcher
+  ports:
+    - name: prometheus
+      port: 9093
