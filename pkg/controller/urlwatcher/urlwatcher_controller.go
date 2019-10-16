@@ -414,9 +414,9 @@ func (r *ReconcileUrlWatcher) deploymentForUrlWatcher(m *urlwatcherv1alpha1.UrlW
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
-						Image:   "busybox",
-						Name:    "url-watcher",
-						Command: []string{"sleep", "3600"},
+						Image:   "managedkube/endpoint-runner:dev",
+						Name:    "endpoint-runner",
+						//Command: []string{"sleep", "3600"},
 						// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#envvar-v1-core
 						Env: []corev1.EnvVar{
 							{
