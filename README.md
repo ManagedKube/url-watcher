@@ -56,3 +56,24 @@ operator-sdk up local --namespace=default
 # Using the debugger
 
 https://github.com/operator-framework/operator-sdk/issues/1315
+
+
+# Go modules
+
+https://blog.golang.org/using-go-modules
+
+https://medium.com/@fonseka.live/getting-started-with-go-modules-b3dac652066d
+
+## Setting up the project
+
+```
+go mod init
+```
+
+# endpoint-runner
+
+Running
+```
+cd endpoint-runner
+go run main.go
+```
