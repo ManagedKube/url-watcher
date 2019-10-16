@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-6
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: www.qa.us-east-1.healthtap.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: service1
+              servicePort: 8888

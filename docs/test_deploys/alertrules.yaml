@@ -1,0 +1,23 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    prometheus: k8s
+    role: alert-rules
+    app: prometheus-operator
+    release: monitoring-prometheus-operator
+  name: url-watcher
+#  namespace: monitoring
+spec:
+  groups:
+    - name: url-watcher.bad-status-code
+      rules:
+        - alert: urlWatcherBadStatusCode
+          expr: managedkube_url_watcher_endpoint_status_code != 200
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            description: 'This endpoint retured a bad status code.  Current value: {{ $value }}'
+            summary: This endpoint retured a bad status code.
